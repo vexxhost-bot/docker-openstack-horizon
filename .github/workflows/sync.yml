@@ -1,0 +1,31 @@
+name: sync
+concurrency:
+  group: sync
+  cancel-in-progress: true
+on:
+  schedule:
+  - cron: 0 0 * * *
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Atmosphere branch, tag or SHA to checkout
+        required: true
+        default: main
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Atmosphere
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.ref || 'main' }}
+        repository: vexxhost/atmosphere
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+        cache: "true"
+        go-version-file: go.mod
+    - name: Synchronize Image Repository
+      run: go run ./cmd/atmosphere-ci image repo sync horizon
+      env:
+        GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
