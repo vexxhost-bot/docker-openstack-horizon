@@ -43,6 +43,7 @@ jobs:
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REF=${{ env.PROJECT_REF }}
+          EXTRAS=
           PROFILES=apache
           DIST_PACKAGES=
           PIP_PACKAGES=designate-dashboard heat-dashboard ironic-ui magnum-ui neutron-vpnaas-dashboard octavia-dashboard senlin-dashboard monasca-ui
