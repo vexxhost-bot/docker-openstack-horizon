@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile-upstream:master-labs
 
 FROM quay.io/vexxhost/bindep-loci:latest AS bindep
 
