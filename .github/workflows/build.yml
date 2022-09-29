@@ -20,6 +20,7 @@ jobs:
         - wallaby
         - xena
         - yoga
+        - zed
     steps:
     - name: Install QEMU static binaries
       uses: docker/setup-qemu-action@v2
