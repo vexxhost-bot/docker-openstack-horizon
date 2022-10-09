@@ -43,6 +43,7 @@ jobs:
         build-args: |-
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
+          PROJECT_REPO=https://github.com/openstack/horizon
           PROJECT_REF=${{ env.PROJECT_REF }}
           EXTRAS=
           PROFILES=apache
