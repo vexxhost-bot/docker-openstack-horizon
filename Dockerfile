@@ -2,9 +2,9 @@
 
 FROM quay.io/vexxhost/bindep-loci:latest AS bindep
 
-FROM quay.io/vexxhost/openstack-builder-focal:6e7f0248974300c6e6b835457e44cc3bd73d649f AS builder
+FROM quay.io/vexxhost/openstack-builder-focal:5b36c8ca71f52dafacafc8b65715d3a82943e0b4 AS builder
 COPY --from=bindep --link /runtime-pip-packages /runtime-pip-packages
 
-FROM quay.io/vexxhost/openstack-runtime-focal:670bb89aab5863850d4ad83e0b47ad600a2b9268 AS runtime
+FROM quay.io/vexxhost/openstack-runtime-focal:9138ca743e114e4688ed9c2757307fb2ea1d0b74 AS runtime
 COPY --from=bindep --link /runtime-dist-packages /runtime-dist-packages
 COPY --from=builder --link /var/lib/openstack /var/lib/openstack

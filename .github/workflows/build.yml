@@ -48,7 +48,7 @@ jobs:
           EXTRAS=
           PROFILES=apache
           DIST_PACKAGES=
-          PIP_PACKAGES=designate-dashboard heat-dashboard ironic-ui magnum-ui neutron-vpnaas-dashboard octavia-dashboard senlin-dashboard monasca-ui
+          PIP_PACKAGES=cryptography designate-dashboard heat-dashboard ironic-ui magnum-ui neutron-vpnaas-dashboard octavia-dashboard senlin-dashboard monasca-ui
         cache-from: type=gha,scope=${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.release }}
         context: .
