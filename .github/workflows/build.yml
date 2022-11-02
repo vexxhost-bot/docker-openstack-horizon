@@ -48,7 +48,7 @@ jobs:
           EXTRAS=
           PROFILES=apache
           DIST_PACKAGES=
-          PIP_PACKAGES=cryptography designate-dashboard heat-dashboard ironic-ui magnum-ui neutron-vpnaas-dashboard octavia-dashboard senlin-dashboard monasca-ui
+          PIP_PACKAGES=cryptography git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }}
         cache-from: type=gha,scope=${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.release }}
         context: .
