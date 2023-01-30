@@ -16,6 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        exclude:
+        - from: focal
+          release: zed
+        - from: jammy
+          release: wallaby
+        - from: jammy
+          release: xena
+        from:
+        - focal
+        - jammy
         release:
         - wallaby
         - xena
@@ -41,6 +51,8 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         build-args: |-
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REPO=https://github.com/openstack/horizon
@@ -49,15 +61,15 @@ jobs:
           PROFILES=apache
           DIST_PACKAGES=
           PIP_PACKAGES=cryptography git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }}
-        cache-from: type=gha,scope=${{ matrix.release }}
-        cache-to: type=gha,mode=max,scope=${{ matrix.release }}
+        cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
         context: .
         platforms: linux/amd64
         push: ${{ github.event_name == 'push' }}
-        tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}
+        tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}
     - name: Promote image
       uses: akhilerm/tag-push-action@v2.0.0
-      if: github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && ((matrix.from == 'focal') || (matrix.from == 'jammy' && matrix.release != 'yoga'))
       with:
         dst: quay.io/vexxhost/horizon:${{ matrix.release }}
-        src: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}
+        src: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}
