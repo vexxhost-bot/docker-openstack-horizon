@@ -14,6 +14,11 @@ on:
 jobs:
   image:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      security-events: write
     strategy:
       matrix:
         exclude:
@@ -50,12 +55,19 @@ jobs:
         password: ${{ secrets.QUAY_ROBOT_TOKEN }}
         registry: quay.io
         username: ${{ secrets.QUAY_USERNAME }}
+    - name: Install cosign
+      uses: sigstore/cosign-installer@main
+    - name: Verify images
+      run: |-
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-builder/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-builder-${{ matrix.from }}:633b2cea3e553db05136b7e6a7a4a8c2e0fdcf1b
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-runtime/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:501efbc97d293436af82a18076b4369380856532
     - name: Build image
       uses: docker/build-push-action@v3
+      id: push-step
       with:
         build-args: |-
-          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}
-          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:633b2cea3e553db05136b7e6a7a4a8c2e0fdcf1b
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:501efbc97d293436af82a18076b4369380856532
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REPO=https://github.com/vexxhost/horizon
@@ -66,13 +78,28 @@ jobs:
           PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
         cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
+        sbom: true
         context: .
         platforms: linux/amd64
         push: ${{ github.event_name == 'push' }}
-        tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}
+        tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
     - name: Promote image
       uses: akhilerm/tag-push-action@v2.0.0
       if: github.event_name == 'push' && ((matrix.from == 'focal') || (matrix.from == 'jammy' && matrix.release != 'yoga'))
       with:
         dst: quay.io/vexxhost/horizon:${{ matrix.release }}
-        src: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}
+        src: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
+    - name: Sign the container image
+      if: ${{ github.event_name == 'push' }}
+      run: cosign sign --yes quay.io/vexxhost/horizon@${{ steps.push-step.outputs.digest }}
+    - uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        ignore-unfixed: true
+    - uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        category: ${{ env.PROJECT_REF }}-${{ matrix.from }}
+        sarif_file: 'trivy-results.sarif'
