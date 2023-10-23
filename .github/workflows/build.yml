@@ -49,7 +49,7 @@ jobs:
     - name: Setup environment variables
       run: |-
         echo PROJECT_REF=$(cat manifest.yml | yq '."${{ matrix.release }}".sha') >> $GITHUB_ENV
-        echo BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:656cf9c3011618bebf822f996dfa54461b4088e9 >> $GITHUB_ENV
+        echo BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172 >> $GITHUB_ENV
         echo RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:501efbc97d293436af82a18076b4369380856532 >> $GITHUB_ENV
     - name: Authenticate with Quay.io
       uses: docker/login-action@v2
