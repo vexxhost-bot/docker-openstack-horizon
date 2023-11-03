@@ -13,12 +13,12 @@ on:
     - main
 jobs:
   image:
-    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       id-token: write
       security-events: write
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         exclude:
@@ -26,6 +26,8 @@ jobs:
           release: zed
         - from: focal
           release: "2023.1"
+        - from: focal
+          release: "2023.2"
         - from: jammy
           release: wallaby
         - from: jammy
@@ -39,6 +41,7 @@ jobs:
         - yoga
         - zed
         - "2023.1"
+        - "2023.2"
     steps:
     - name: Install QEMU static binaries
       uses: docker/setup-qemu-action@v2
@@ -47,10 +50,7 @@ jobs:
     - name: Checkout project
       uses: actions/checkout@v3
     - name: Setup environment variables
-      run: |-
-        echo PROJECT_REF=$(cat manifest.yml | yq '."${{ matrix.release }}".sha') >> $GITHUB_ENV
-        echo BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172 >> $GITHUB_ENV
-        echo RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:501efbc97d293436af82a18076b4369380856532 >> $GITHUB_ENV
+      run: echo PROJECT_REF=$(cat manifest.yml | yq '."${{ matrix.release }}".sha') >> $GITHUB_ENV
     - name: Authenticate with Quay.io
       uses: docker/login-action@v2
       if: ${{ github.event_name == 'push' }}
@@ -62,15 +62,14 @@ jobs:
       uses: sigstore/cosign-installer@main
     - name: Verify images
       run: |-
-        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-builder/.github/workflows/build.yml@refs/heads/main ${BUILDER_IMAGE}
-        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-runtime/.github/workflows/build.yml@refs/heads/main ${RUNTIME_IMAGE}
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-builder/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-runtime/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
     - name: Build image
       uses: docker/build-push-action@v3
-      id: push-step
       with:
         build-args: |-
-          BUILDER_IMAGE=${{ env.BUILDER_IMAGE }}
-          RUNTIME_IMAGE=${{ env.RUNTIME_IMAGE }}
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REPO=https://github.com/vexxhost/horizon
@@ -81,11 +80,47 @@ jobs:
           PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
         cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
-        sbom: true
+        context: .
+        load: "true"
+        tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
+      env:
+        DOCKER_CONTENT_TRUST: "1"
+    - name: Scan image for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        format: sarif
+        ignore-unfixed: "true"
+        image-ref: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
+        output: trivy-results.sarif
+    - name: Upload scan result
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        category: ${{ env.PROJECT_REF }}-${{ matrix.from }}
+        sarif_file: trivy-results.sarif
+    - name: Build image
+      uses: docker/build-push-action@v3
+      with:
+        build-args: |-
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
+          RELEASE=${{ matrix.release }}
+          PROJECT=horizon
+          PROJECT_REPO=https://github.com/vexxhost/horizon
+          PROJECT_REF=${{ env.PROJECT_REF }}
+          EXTRAS=
+          PROFILES=apache
+          DIST_PACKAGES=
+          PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
+        cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
         context: .
         platforms: linux/amd64
         push: ${{ github.event_name == 'push' }}
+        sbom: "true"
         tags: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
+      env:
+        DOCKER_CONTENT_TRUST: "1"
     - name: Promote image
       uses: akhilerm/tag-push-action@v2.0.0
       if: github.event_name == 'push' && ((matrix.from == 'focal') || (matrix.from == 'jammy' && matrix.release != 'yoga'))
@@ -93,15 +128,5 @@ jobs:
         dst: quay.io/vexxhost/horizon:${{ matrix.release }}
         src: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
     - name: Sign the container image
-      if: ${{ github.event_name == 'push' }}
       run: cosign sign --yes quay.io/vexxhost/horizon@${{ steps.push-step.outputs.digest }}
-    - uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: quay.io/vexxhost/horizon:${{ env.PROJECT_REF }}-${{ matrix.from }}-${{ github.sha }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        ignore-unfixed: true
-    - uses: github/codeql-action/upload-sarif@v2
-      with:
-        category: ${{ env.PROJECT_REF }}-${{ matrix.from }}
-        sarif_file: 'trivy-results.sarif'
+      if: ${{ github.event_name == 'push' }}
