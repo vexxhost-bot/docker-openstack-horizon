@@ -99,6 +99,7 @@ jobs:
         category: ${{ env.PROJECT_REF }}-${{ matrix.from }}
         sarif_file: trivy-results.sarif
     - name: Build image
+      id: push-step
       uses: docker/build-push-action@v3
       with:
         build-args: |-
