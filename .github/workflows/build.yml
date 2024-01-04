@@ -2,7 +2,7 @@ name: build
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-on:
+"on":
   pull_request:
     types:
     - opened
@@ -62,14 +62,14 @@ jobs:
       uses: sigstore/cosign-installer@main
     - name: Verify images
       run: |-
-        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-builder/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
-        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-runtime/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-builder/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-builder-${{ matrix.from }}:1e91e346ed4164361923475e3cfb6f8bc433cb70
+        cosign verify --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity=https://github.com/vexxhost/docker-openstack-runtime/.github/workflows/build.yml@refs/heads/main quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:9080bbaebe90d82e96c57144afc0aaeb33a9180b
     - name: Build image
       uses: docker/build-push-action@v3
       with:
         build-args: |-
-          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
-          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:1e91e346ed4164361923475e3cfb6f8bc433cb70
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:9080bbaebe90d82e96c57144afc0aaeb33a9180b
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REPO=https://github.com/vexxhost/horizon
@@ -77,7 +77,7 @@ jobs:
           EXTRAS=
           PROFILES=apache
           DIST_PACKAGES=
-          PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
+          PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
         cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
         context: .
@@ -103,8 +103,8 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         build-args: |-
-          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:b30eefa3016d4d18ad81a25526617859576fe172
-          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:f2098f520d8f5c191c271ebdb6e20e761d8ce0be
+          BUILDER_IMAGE=quay.io/vexxhost/openstack-builder-${{ matrix.from }}:1e91e346ed4164361923475e3cfb6f8bc433cb70
+          RUNTIME_IMAGE=quay.io/vexxhost/openstack-runtime-${{ matrix.from }}:9080bbaebe90d82e96c57144afc0aaeb33a9180b
           RELEASE=${{ matrix.release }}
           PROJECT=horizon
           PROJECT_REPO=https://github.com/vexxhost/horizon
@@ -112,7 +112,7 @@ jobs:
           EXTRAS=
           PROFILES=apache
           DIST_PACKAGES=
-          PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/monasca-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
+          PIP_PACKAGES=cryptography python-binary-memcached git+https://github.com/openstack/designate-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/heat-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/ironic-ui.git@stable/${{ matrix.release }} git+https://github.com/vexxhost/magnum-ui.git@stable/${{ matrix.release }} git+https://github.com/openstack/neutron-vpnaas-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/octavia-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/senlin-dashboard.git@stable/${{ matrix.release }} git+https://github.com/openstack/manila-ui.git@stable/${{ matrix.release }}
         cache-from: type=gha,scope=${{ matrix.from }}-${{ matrix.release }}
         cache-to: type=gha,mode=max,scope=${{ matrix.from }}-${{ matrix.release }}
         context: .
